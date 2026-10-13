@@ -6,6 +6,7 @@ members = {}
 instructions = {}
 outputs = {}
 
+
 def create_member(
     uid,
     time_value,
@@ -47,6 +48,7 @@ def edit_member(uid, data):
     members[uid]["uid"] = uid
     return members[uid]
 
+
 def create_instruction(uid, data):
     """Создаёт новую запись Instruction."""
     if uid in instructions:
@@ -86,6 +88,7 @@ def edit_instruction(uid, data):
     instructions[uid].update(data)
     instructions[uid]["uid"] = uid
     return instructions[uid]
+
 
 def create_output(
     uid,

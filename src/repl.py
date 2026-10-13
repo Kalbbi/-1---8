@@ -43,7 +43,6 @@ def run_repl():
             print(model.get_all_members())
             continue
 
-        
         if command == "get_member":
             uid = int(input("uid: "))
             try:
@@ -52,8 +51,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
         if command == "edit_member":
             uid = int(input("uid: "))
             platform = input("platform: ")
@@ -72,8 +69,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
         if command == "create_member":
             uid = int(input("uid: "))
             time_value = int(input("time: "))
@@ -92,8 +87,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
         if command == "create_instruction":
             uid = int(input("uid: "))
             time_value = int(input("time: "))
@@ -122,14 +115,10 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
         if command == "get_all_instructions":
             print(model.get_all_instructions())
             continue
 
-        
-        
         if command == "get_instruction":
             uid = int(input("uid: "))
             try:
@@ -138,9 +127,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
-        
         if command == "edit_instruction":
             uid = int(input("uid: "))
             status = input("status: ")
@@ -159,9 +145,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-
-        
         if command == "create_output":
             uid = int(input("uid: "))
             time_value = int(input("time: "))
@@ -181,13 +164,10 @@ def run_repl():
             print(output)
             continue
 
-        
         if command == "get_all_outputs":
             print(model.get_all_outputs())
             continue
 
-        
-        
         if command == "get_output":
             uid = int(input("uid: "))
             try:
@@ -196,9 +176,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
-        
         if command == "edit_output":
             uid = int(input("uid: "))
             response = input("response: ")
@@ -219,8 +196,6 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
-
-        
         if command == "recent":
             print(model.get_recent_instruction_descriptions())
             continue
