@@ -5,22 +5,174 @@ from src import model
 
 def show_help():
     """Показывает доступные команды."""
+    commands = [
+        "create_member",
+        "get_all_members",
+        "get_member",
+        "edit_member",
+        "create_instruction",
+        "get_all_instructions",
+        "get_instruction",
+        "edit_instruction",
+        "create_output",
+        "get_all_outputs",
+        "get_output",
+        "edit_output",
+        "recent",
+        "help",
+        "exit",
+    ]
     print("Доступные команды:")
-    print("create_member")
-    print("get_all_members")
-    print("get_member")
-    print("edit_member")
-    print("create_instruction")
-    print("get_all_instructions")
-    print("get_instruction")
-    print("edit_instruction")
-    print("create_output")
-    print("get_all_outputs")
-    print("get_output")
-    print("edit_output")
-    print("recent")
-    print("help")
-    print("exit")
+    for command in commands:
+        print(command)
+
+
+def read_member_data():
+    """Считывает данные участника."""
+    return {
+        "uid": int(input("uid: ")),
+        "time": int(input("time: ")),
+        "platform": input("platform: "),
+        "user_agent": input("user_agent: "),
+    }
+
+
+def read_instruction_data():
+    """Считывает данные инструкции."""
+    return {
+        "uid": int(input("uid: ")),
+        "time": int(input("time: ")),
+        "input": input("input: "),
+        "member": int(input("member: ")),
+        "description": input("description: "),
+        "tags": input("tags: "),
+        "status": input("status: "),
+        "started": int(input("started: ")),
+    }
+
+
+def read_output_data():
+    """Считывает данные результата."""
+    return {
+        "uid": int(input("uid: ")),
+        "time": int(input("time: ")),
+        "response": input("response: "),
+        "status": input("status: "),
+        "failure": input("failure: "),
+        "instruction": int(input("instruction: ")),
+    }
+
+
+def create_member():
+    """Создаёт участника."""
+    data = read_member_data()
+    return model.create_member(
+        data["uid"],
+        data["time"],
+        data["platform"],
+        data["user_agent"],
+    )
+
+
+def create_instruction():
+    """Создаёт инструкцию."""
+    data = read_instruction_data()
+    uid = data.pop("uid")
+    return model.create_instruction(uid, data)
+
+
+def create_output():
+    """Создаёт результат выполнения инструкции."""
+    data = read_output_data()
+    return model.create_output(
+        data["uid"],
+        data["time"],
+        data["response"],
+        data["status"],
+        data["failure"],
+        data["instruction"],
+    )
+
+
+def edit_member():
+    """Изменяет данные участника."""
+    uid = int(input("uid: "))
+    data = {
+        "platform": input("platform: "),
+        "user_agent": input("user_agent: "),
+    }
+    return model.edit_member(uid, data)
+
+
+def edit_instruction():
+    """Изменяет данные инструкции."""
+    uid = int(input("uid: "))
+    data = {
+        "status": input("status: "),
+        "description": input("description: "),
+    }
+    return model.edit_instruction(uid, data)
+
+
+def edit_output():
+    """Изменяет данные результата."""
+    uid = int(input("uid: "))
+    data = {
+        "response": input("response: "),
+        "status": input("status: "),
+        "failure": input("failure: "),
+    }
+    return model.edit_output(uid, data)
+
+
+def execute_single_getter(command, single_getters):
+    """Получает одну запись по идентификатору."""
+    try:
+        uid = int(input("uid: "))
+    except ValueError:
+        print("Ошибка: uid должен быть целым числом.")
+        return
+
+    print(single_getters[command](uid))
+
+
+def execute_command(command):
+    """Выполняет команду консоли."""
+    handlers = {
+        "create_member": create_member,
+        "create_instruction": create_instruction,
+        "create_output": create_output,
+        "edit_member": edit_member,
+        "edit_instruction": edit_instruction,
+        "edit_output": edit_output,
+    }
+
+    if command in handlers:
+        print(handlers[command]())
+        return
+
+    getters = {
+        "get_all_members": model.get_all_members,
+        "get_all_instructions": model.get_all_instructions,
+        "get_all_outputs": model.get_all_outputs,
+        "recent": model.get_recent_instruction_descriptions,
+    }
+
+    if command in getters:
+        print(getters[command]())
+        return
+
+    single_getters = {
+        "get_member": model.get_member,
+        "get_instruction": model.get_instruction,
+        "get_output": model.get_output,
+    }
+
+    if command in single_getters:
+        execute_single_getter(command, single_getters)
+        return
+
+    print("Неизвестная команда. Введите help.")
 
 
 def run_repl():
@@ -39,173 +191,10 @@ def run_repl():
             show_help()
             continue
 
-        if command == "get_all_members":
-            print(model.get_all_members())
-            continue
-
-        if command == "get_member":
-            uid = int(input("uid: "))
-            try:
-                print(model.get_member(uid))
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "edit_member":
-            uid = int(input("uid: "))
-            platform = input("platform: ")
-            user_agent = input("user_agent: ")
-
-            try:
-                member = model.edit_member(
-                    uid,
-                    {
-                        "platform": platform,
-                        "user_agent": user_agent,
-                    },
-                )
-                print(member)
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "create_member":
-            uid = int(input("uid: "))
-            time_value = int(input("time: "))
-            platform = input("platform: ")
-            user_agent = input("user_agent: ")
-
-            try:
-                member = model.create_member(
-                    uid,
-                    time_value,
-                    platform,
-                    user_agent,
-                )
-                print(member)
-            except (ValueError, KeyError) as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "create_instruction":
-            uid = int(input("uid: "))
-            time_value = int(input("time: "))
-            input_value = input("input: ")
-            member = int(input("member: "))
-            description = input("description: ")
-            tags = input("tags: ")
-            status = input("status: ")
-            started = int(input("started: "))
-
-            try:
-                instruction = model.create_instruction(
-                    uid,
-                    {
-                        "time": time_value,
-                        "input": input_value,
-                        "member": member,
-                        "description": description,
-                        "tags": tags,
-                        "status": status,
-                        "started": started,
-                    },
-                )
-                print(instruction)
-            except (ValueError, KeyError) as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "get_all_instructions":
-            print(model.get_all_instructions())
-            continue
-
-        if command == "get_instruction":
-            uid = int(input("uid: "))
-            try:
-                print(model.get_instruction(uid))
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "edit_instruction":
-            uid = int(input("uid: "))
-            status = input("status: ")
-            description = input("description: ")
-
-            try:
-                instruction = model.edit_instruction(
-                    uid,
-                    {
-                        "status": status,
-                        "description": description,
-                    },
-                )
-                print(instruction)
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        
-        if command == "create_output":
-            uid = int(input("uid: "))
-            time_value = int(input("time: "))
-            response = input("response: ")
-            status = input("status: ")
-            failure = input("failure: ")
-            instruction = int(input("instruction: "))
-
-            try:
-                output = model.create_output(
-                    uid,
-                    time_value,
-                    response,
-                    status,
-                    failure,
-                    instruction,
-                )
-                print(output)
-            except (ValueError, KeyError) as error:
-                print(f"Ошибка: {error}")
-            continue
-
-
-        if command == "get_all_outputs":
-            print(model.get_all_outputs())
-            continue
-
-        if command == "get_output":
-            uid = int(input("uid: "))
-            try:
-                print(model.get_output(uid))
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "edit_output":
-            uid = int(input("uid: "))
-            response = input("response: ")
-            status = input("status: ")
-            failure = input("failure: ")
-
-            try:
-                output = model.edit_output(
-                    uid,
-                    {
-                        "response": response,
-                        "status": status,
-                        "failure": failure,
-                    },
-                )
-                print(output)
-            except KeyError as error:
-                print(f"Ошибка: {error}")
-            continue
-
-        if command == "recent":
-            print(model.get_recent_instruction_descriptions())
-            continue
-
-        print("Команда пока не реализована.")
+        try:
+            execute_command(command)
+        except (ValueError, KeyError) as error:
+            print(f"Ошибка: {error}")
 
 
 if __name__ == "__main__":
