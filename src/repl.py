@@ -145,6 +145,7 @@ def run_repl():
                 print(f"Ошибка: {error}")
             continue
 
+        
         if command == "create_output":
             uid = int(input("uid: "))
             time_value = int(input("time: "))
@@ -153,16 +154,20 @@ def run_repl():
             failure = input("failure: ")
             instruction = int(input("instruction: "))
 
-            output = model.create_output(
-                uid,
-                time_value,
-                response,
-                status,
-                failure,
-                instruction,
-            )
-            print(output)
+            try:
+                output = model.create_output(
+                    uid,
+                    time_value,
+                    response,
+                    status,
+                    failure,
+                    instruction,
+                )
+                print(output)
+            except (ValueError, KeyError) as error:
+                print(f"Ошибка: {error}")
             continue
+
 
         if command == "get_all_outputs":
             print(model.get_all_outputs())
