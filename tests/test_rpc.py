@@ -1,4 +1,4 @@
-﻿"""Тесты RPC-протокола."""
+"""Тесты RPC-протокола."""
 
 import pytest
 import socket
