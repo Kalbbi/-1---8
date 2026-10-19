@@ -143,37 +143,27 @@ class RPCStateMachine(RuleBasedStateMachine):
     @rule(
         uid=st.integers(min_value=1, max_value=1000000),
         time_value=st.integers(min_value=1, max_value=2000000000),
-        input_value=xml_text,
-        description=xml_text,
-        tags=xml_text,
-        status=xml_text,
-        started=st.integers(min_value=0, max_value=2000000000),
+        fields=st.fixed_dictionaries(
+            {
+                "input": xml_text,
+                "description": xml_text,
+                "tags": xml_text,
+                "status": xml_text,
+                "started": st.integers(
+                    min_value=0,
+                    max_value=2000000000,
+                ),
+            }
+        ),
     )
-    def create_instruction(
-        self,
-        uid,
-        time_value,
-        input_value,
-        description,
-        tags,
-        status,
-        started,
-    ):
+    def create_instruction(self, uid, time_value, fields):
         if uid in self.instruction_ids or not self.member_ids:
             return
 
-        result = self.client.create_instruction(
-            uid,
-            {
-                "time": time_value,
-                "input": input_value,
-                "member": min(self.member_ids),
-                "description": description,
-                "tags": tags,
-                "status": status,
-                "started": started,
-            },
-        )
+        fields["time"] = time_value
+        fields["member"] = min(self.member_ids)
+
+        result = self.client.create_instruction(uid, fields)
 
         self.instruction_ids.add(uid)
 

@@ -75,38 +75,28 @@ class ModelStateMachine(RuleBasedStateMachine):
     @rule(
         uid=st.integers(min_value=1, max_value=1000000),
         time_value=st.integers(min_value=1, max_value=2000000000),
-        input_value=st.text(max_size=50),
-        description=st.text(max_size=50),
-        tags=st.text(max_size=30),
-        status=st.text(max_size=20),
-        started=st.integers(min_value=0, max_value=2000000000),
+        fields=st.fixed_dictionaries(
+            {
+                "input": st.text(max_size=50),
+                "description": st.text(max_size=50),
+                "tags": st.text(max_size=30),
+                "status": st.text(max_size=20),
+                "started": st.integers(
+                    min_value=0,
+                    max_value=2000000000,
+                ),
+            }
+        ),
     )
-    def create_instruction(
-        self,
-        uid,
-        time_value,
-        input_value,
-        description,
-        tags,
-        status,
-        started,
-    ):
+    def create_instruction(self, uid, time_value, fields):
         if uid in self.instruction_ids or not self.member_ids:
             return
 
         member_uid = min(self.member_ids)
-        created = model.create_instruction(
-            uid,
-            {
-                "time": time_value,
-                "input": input_value,
-                "member": member_uid,
-                "description": description,
-                "tags": tags,
-                "status": status,
-                "started": started,
-            },
-        )
+        fields["time"] = time_value
+        fields["member"] = member_uid
+
+        created = model.create_instruction(uid, fields)
         self.instruction_ids.add(uid)
 
         assert created["uid"] == uid

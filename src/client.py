@@ -1,7 +1,7 @@
 """TCP-клиент для выполнения RPC-операций."""
 
 import socket
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as element_tree
 
 from src.protocol import (
     RESPONSE_HEADER_SIZE,
@@ -17,24 +17,24 @@ PORT = 5000
 def value_to_element(value, name="value"):
     """Преобразует Python-значение в XML-элемент."""
     if value is None:
-        element = ET.Element("none")
+        element = element_tree.Element("none")
     elif isinstance(value, bool):
-        element = ET.Element("bool")
+        element = element_tree.Element("bool")
         element.text = "true" if value else "false"
     elif isinstance(value, int):
-        element = ET.Element("int")
+        element = element_tree.Element("int")
         element.text = str(value)
     elif isinstance(value, str):
-        element = ET.Element("str")
+        element = element_tree.Element("str")
         element.text = value
     elif isinstance(value, (list, tuple)):
-        element = ET.Element("list")
+        element = element_tree.Element("list")
         for item in value:
             element.append(value_to_element(item, "item"))
     elif isinstance(value, dict):
-        element = ET.Element("dict")
+        element = element_tree.Element("dict")
         for key, item in value.items():
-            child = ET.SubElement(element, "item", key=str(key))
+            child = element_tree.SubElement(element, "item", key=str(key))
             child.append(value_to_element(item))
     else:
         raise ValueError(f"Неподдерживаемый тип: {type(value).__name__}")
@@ -43,33 +43,36 @@ def value_to_element(value, name="value"):
     return element
 
 
+def _dict_to_value(element):
+    """Преобразует XML-словарь в Python-словарь."""
+    result = {}
+    for child in element:
+        key = child.get("key")
+        if key is None:
+            key = child.get("name", child.tag)
+        result[key] = element_to_value(child[0])
+    return result
+
+
 def element_to_value(element):
     """Преобразует XML-элемент в Python-значение."""
-    if element.tag == "none":
-        return None
+    converters = {
+        "none": lambda item: None,
+        "bool": lambda item: item.text == "true",
+        "int": lambda item: int(item.text),
+        "str": lambda item: item.text or "",
+        "list": lambda item: [
+            element_to_value(child) for child in item
+        ],
+        "dict": _dict_to_value,
+    }
 
-    if element.tag == "bool":
-        return element.text == "true"
-
-    if element.tag == "int":
-        return int(element.text)
-
-    if element.tag == "str":
-        return element.text or ""
-
-    if element.tag == "list":
-        return [element_to_value(child) for child in element]
-
-    if element.tag == "dict":
-        result = {}
-        for child in element:
-            key = child.get("key")
-            if key is None:
-                key = child.get("name", child.tag)
-            result[key] = element_to_value(child[0])
-        return result
-
-    raise ValueError(f"Неизвестный XML-тип: {element.tag}")
+    converter = converters.get(element.tag)
+    if converter is None:
+        raise ValueError(
+            f"Неизвестный XML-тип: {element.tag}"
+        )
+    return converter(element)
 
 
 def read_exact(connection, size):
@@ -96,17 +99,16 @@ class RPCClient:
         self.port = port
         self.timeout = timeout
 
-    def call(self, operation, arguments=None):
-        """Отправляет запрос и возвращает результат сервера."""
-        arguments = arguments or {}
-        root = ET.Element("request")
-
+    def _make_request(self, operation, arguments):
+        """Формирует XML и кодирует RPC-запрос."""
+        root = element_tree.Element("request")
         for name, value in arguments.items():
             root.append(value_to_element(value, name))
+        body = element_tree.tostring(root, encoding="utf-8")
+        return encode_request(operation, body)
 
-        body = ET.tostring(root, encoding="utf-8")
-        request = encode_request(operation, body)
-
+    def _exchange(self, request):
+        """Отправляет запрос и получает ответ по TCP."""
         with socket.create_connection(
             (self.host, self.port),
             timeout=self.timeout,
@@ -115,16 +117,15 @@ class RPCClient:
             header = read_exact(connection, RESPONSE_HEADER_SIZE)
             body_size = int.from_bytes(header[2:6], "big")
             response_body = read_exact(connection, body_size)
+        return header + response_body
 
-        response_operation, response_xml = decode_response(
-            header + response_body
-        )
-
+    def _parse_response(self, operation, response_data):
+        """Проверяет и разбирает ответ сервера."""
+        response_operation, response_xml = decode_response(response_data)
         if response_operation != operation % 256:
             raise ValueError("Код операции в ответе не совпадает с запросом.")
 
-        response = ET.fromstring(response_xml)
-
+        response = element_tree.fromstring(response_xml)
         if response.get("status") == "error":
             error = response.findtext("error", "Неизвестная ошибка")
             raise RuntimeError(error)
@@ -137,11 +138,13 @@ class RPCClient:
             ),
             None,
         )
+        return None if result is None else element_to_value(result)
 
-        if result is None:
-            return None
-
-        return element_to_value(result)
+    def call(self, operation, arguments=None):
+        """Отправляет запрос и возвращает результат сервера."""
+        request = self._make_request(operation, arguments or {})
+        response_data = self._exchange(request)
+        return self._parse_response(operation, response_data)
 
     def create_member(
         self, uid, time_value, platform, user_agent

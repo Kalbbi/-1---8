@@ -23,26 +23,34 @@ from src.server import (
 from src.client import RPCClient
 from src.server import handle_connection
 
+PROTOCOL_VERSION = 1
+TEST_REQUEST_OPERATION = 258
+TEST_RESPONSE_OPERATION = 7
+TEST_ERROR_OPERATION = 3
+INVALID_REQUEST_OPERATION = 65536
+INVALID_RESPONSE_OPERATION = 256
+UNKNOWN_OPERATION = 999
+
 
 def test_request_round_trip():
-    message = encode_request(258, "<test>Привет</test>")
+    message = encode_request(TEST_REQUEST_OPERATION, "<test>Привет</test>")
     operation, body = decode_request(message)
 
-    assert message[0] == 1
+    assert message[0] == PROTOCOL_VERSION
     assert message[1:3] == b"\x01\x02"
     assert int.from_bytes(message[3:8], "big") == len(body)
-    assert operation == 258
+    assert operation == TEST_REQUEST_OPERATION
     assert body.decode("utf-8") == "<test>Привет</test>"
 
 
 def test_response_round_trip():
-    message = encode_response(7, "<result>OK</result>")
+    message = encode_response(TEST_RESPONSE_OPERATION, "<result>OK</result>")
     operation, body = decode_response(message)
 
-    assert message[0] == 1
-    assert message[1] == 7
+    assert message[0] == PROTOCOL_VERSION
+    assert message[1] == TEST_RESPONSE_OPERATION
     assert int.from_bytes(message[2:6], "big") == len(body)
-    assert operation == 7
+    assert operation == TEST_RESPONSE_OPERATION
     assert body.decode("utf-8") == "<result>OK</result>"
 
 
@@ -72,12 +80,12 @@ def test_response_rejects_invalid_body_size():
 
 def test_request_rejects_invalid_operation():
     with pytest.raises(ValueError):
-        encode_request(65536, b"")
+        encode_request(INVALID_REQUEST_OPERATION, b"")
 
 
 def test_response_rejects_invalid_operation():
     with pytest.raises(ValueError):
-        encode_response(256, b"")
+        encode_response(INVALID_RESPONSE_OPERATION, b"")
 
 
 def test_xml_value_round_trip():
@@ -109,14 +117,14 @@ def test_parse_xml_arguments():
 
 def test_unknown_operation_is_rejected():
     with pytest.raises(ValueError):
-        call_operation(999, {})
+        call_operation(UNKNOWN_OPERATION, {})
 
 
 def test_response_contains_error():
-    response = make_response(3, error="Member not found")
+    response = make_response(TEST_ERROR_OPERATION, error="Member not found")
 
-    assert response[0] == 1
-    assert response[1] == 3
+    assert response[0] == PROTOCOL_VERSION
+    assert response[1] == TEST_ERROR_OPERATION
     assert b"Member not found" in response
 
 

@@ -5,19 +5,26 @@
 REQUEST_HEADER_SIZE = 8
 RESPONSE_HEADER_SIZE = 6
 PROTOCOL_VERSION = 1
+VERSION_FIELD_SIZE = 1
+REQUEST_OPERATION_FIELD_SIZE = 2
+RESPONSE_OPERATION_FIELD_SIZE = 1
+REQUEST_LENGTH_FIELD_SIZE = 5
+RESPONSE_LENGTH_FIELD_SIZE = 4
+MAX_REQUEST_OPERATION = 65535
+MAX_RESPONSE_OPERATION = 255
 
 
 def encode_request(operation, body):
     """Формирует RPC-запрос."""
-    if not 0 <= operation <= 65535:
+    if not 0 <= operation <= MAX_REQUEST_OPERATION:
         raise ValueError("Код операции должен занимать 2 байта.")
 
     body = body.encode("utf-8") if isinstance(body, str) else body
 
     header = (
-        PROTOCOL_VERSION.to_bytes(1, "big")
-        + operation.to_bytes(2, "big")
-        + len(body).to_bytes(5, "big")
+        PROTOCOL_VERSION.to_bytes(VERSION_FIELD_SIZE, "big")
+        + operation.to_bytes(REQUEST_OPERATION_FIELD_SIZE, "big")
+        + len(body).to_bytes(REQUEST_LENGTH_FIELD_SIZE, "big")
     )
     return header + body
 
@@ -43,15 +50,15 @@ def decode_request(data):
 
 def encode_response(operation, body):
     """Формирует RPC-ответ."""
-    if not 0 <= operation <= 255:
+    if not 0 <= operation <= MAX_RESPONSE_OPERATION:
         raise ValueError("Код операции ответа должен занимать 1 байт.")
 
     body = body.encode("utf-8") if isinstance(body, str) else body
 
     header = (
-        PROTOCOL_VERSION.to_bytes(1, "big")
-        + operation.to_bytes(1, "big")
-        + len(body).to_bytes(4, "big")
+        PROTOCOL_VERSION.to_bytes(VERSION_FIELD_SIZE, "big")
+        + operation.to_bytes(RESPONSE_OPERATION_FIELD_SIZE, "big")
+        + len(body).to_bytes(RESPONSE_LENGTH_FIELD_SIZE, "big")
     )
     return header + body
 
