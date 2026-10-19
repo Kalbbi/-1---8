@@ -230,7 +230,7 @@ def run_server():
         server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         server.bind((HOST, PORT))
         server.listen()
-        print(f"RPC-сервер запущен на {HOST}:{PORT}")
+        print("RPC-сервер запущен на {}:{}".format(HOST, PORT))
 
         while True:
             connection, address = server.accept()
